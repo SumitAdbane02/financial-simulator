@@ -1,5 +1,7 @@
 package com.tradingapp.financialsimulator.controller;
 
+import com.tradingapp.financialsimulator.dto.AuthenticationResponse;
+import com.tradingapp.financialsimulator.dto.LoginRequest;
 import com.tradingapp.financialsimulator.dto.RegisterRequest;
 import com.tradingapp.financialsimulator.service.AuthenticationService;
 import lombok.RequiredArgsConstructor;
@@ -24,4 +26,8 @@ public class AuthController {
         return ResponseEntity.ok("User registered successfully !");
 
     }
+   @PostMapping("/login")
+    public ResponseEntity<AuthenticationResponse> login(@RequestBody LoginRequest request){
+        return ResponseEntity.ok(authenticationService.login(request));
+   }
 }
