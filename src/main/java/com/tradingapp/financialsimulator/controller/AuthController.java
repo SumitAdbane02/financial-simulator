@@ -28,6 +28,7 @@ public class AuthController {
     }
    @PostMapping("/login")
     public ResponseEntity<AuthenticationResponse> login(@RequestBody LoginRequest request){
+        // Delegate the login logic to the service and return the response
         return ResponseEntity.ok(authenticationService.login(request));
    }
 }

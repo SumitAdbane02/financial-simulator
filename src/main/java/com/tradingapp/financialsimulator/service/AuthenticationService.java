@@ -3,6 +3,7 @@ package com.tradingapp.financialsimulator.service;
 import com.tradingapp.financialsimulator.dto.AuthenticationResponse;
 import com.tradingapp.financialsimulator.dto.LoginRequest;
 import com.tradingapp.financialsimulator.dto.RegisterRequest;
+import com.tradingapp.financialsimulator.model.Portfolio;
 import com.tradingapp.financialsimulator.model.Role;
 import com.tradingapp.financialsimulator.model.User;
 import com.tradingapp.financialsimulator.repository.UserRepository;
@@ -11,6 +12,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
 
 /**
  * Service class to handle user authentication-related business logic,
@@ -51,6 +54,17 @@ public class AuthenticationService {
                 .password(passwordEncoder.encode(request.getPassword()))
         // Assign a default role to the new user.
                .role(Role.USER).build();
+
+// highlight-start
+        // Create a new portfolio for the user with a starting cash balance.
+        // Let's give every new user $100,000 of virtual currency to start trading.
+        Portfolio portfolio = Portfolio.builder()
+                .user(user) // Link the portfolio back to the user.
+                .cashBalance(new BigDecimal("100000.00"))
+                .build();
+
+        // Set the portfolio on the user object to establish the bidirectional link.
+        user.setPortfolio(portfolio);
 
         return userRepository.save(user);
     }

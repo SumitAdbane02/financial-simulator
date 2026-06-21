@@ -36,5 +36,6 @@ public class HealthCheckController {
         // The body of the response will be the 'response' map.
 
         return ResponseEntity.ok(response);
+
     }
 }

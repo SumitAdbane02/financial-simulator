@@ -40,6 +40,22 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING) // Tells JPA to persist the enum as a String (e.g., "USER" or "ADMIN") rather than its ordinal value (0 or 1), which is more readable.
     @Column(nullable = false)
     private Role role;
+    // highlight-start
+    // This is the "non-owning" side of the relationship.
+    // 'mappedBy = "user"' tells JPA that the mapping for this relationship
+    // is already defined by the 'user' field in the 'Portfolio' class.
+    // This prevents JPA from creating a redundant foreign key column in the 'users' table.
+    //
+    // 'cascade = CascadeType.ALL' is a critical setting. It means that any persistence
+    // operation (create, update, delete) performed on a User will be "cascaded"
+    // to the associated Portfolio. For example, when we save a new User, its
+    // associated Portfolio will be saved automatically.
+    //
+    // 'fetch = FetchType.LAZY' is a performance optimization. It means the Portfolio
+    // data will not be loaded from the database until it is explicitly accessed
+    // (e.g., via user.getPortfolio()). This prevents loading unnecessary data.
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Portfolio portfolio;
 
     // --- UserDetails Interface Implementation ---
     // These methods are required by Spring Security to handle authentication and authorization.
