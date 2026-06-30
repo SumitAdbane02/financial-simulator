@@ -34,6 +34,25 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
+		<!-- Provides core Spring AOP capabilities, which Spring Retry uses behind the scenes
+     to wrap your methods with retry logic without you having to change your code's structure. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-aop</artifactId>
+		</dependency>
+
+		<!-- The Spring Retry library itself, providing @Retryable, @Backoff, and @Recover annotations. -->
+		<dependency>
+			<groupId>org.springframework.retry</groupId>
+			<artifactId>spring-retry</artifactId>
+		</dependency>
+
+		<!-- == DEPENDENCY FOR INFLUXDB                           == -->
+		<dependency>
+		<groupId>com.influxdb</groupId>
+		<artifactId>influxdb-client-java</artifactId>
+		<version>7.1.0</version>
+		</dependency>
 
 		<!-- Spring Security -->
 		<dependency>

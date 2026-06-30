@@ -57,4 +57,4 @@ public class Transaction {
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime timestamp;
-}s
+}
