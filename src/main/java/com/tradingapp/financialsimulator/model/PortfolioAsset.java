@@ -9,9 +9,10 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 
 /**
- * Represents an asset held within a user's portfolio.
- * This class acts as a join table between Portfolio and Stock,
- * with the additional attribute of 'quantity' to represent the number of shares owned.
+ * Represents a specific stock holding within a user's portfolio.
+ * This entity acts as a join table between Portfolio and Stock
+ * and stores additional information about the holding, such as
+ * quantity owned and average purchase price.
  */
 @Data
 @Builder
@@ -21,24 +22,44 @@ import java.math.BigDecimal;
 @Table(name = "portfolio_assets")
 public class PortfolioAsset {
 
+    // Unique identifier for each portfolio asset record.
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // A portfolio asset must belong to a portfolio. This is the 'many' side of the One-to-Many relationship.
-    // The portfolio is the owner of this asset.
-    @ManyToOne(fetch = FetchType.LAZY) // LAZY fetching is a performance best practice.
-    @JoinColumn(name = "portfolio_id", nullable = false) // This creates the foreign key column 'portfolio_id'.
+    /**
+     * The portfolio to which this asset belongs.
+     * Many PortfolioAsset records can belong to a single Portfolio.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "portfolio_id", nullable = false)
     private Portfolio portfolio;
 
-    // A portfolio asset must be a specific stock.
+    /**
+     * The stock associated with this portfolio asset.
+     * Many PortfolioAsset records can reference the same Stock.
+     */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "stock_id", nullable = false) // This creates the foreign key column 'stock_id'.
+    @JoinColumn(name = "stock_id", nullable = false)
     private Stock stock;
 
-    // The quantity of the stock owned. Using BigDecimal for precision,
-    // which is essential for financial data and allows for fractional shares.
+    /**
+     * The number of shares currently owned by the user.
+     * BigDecimal is used to support fractional shares and
+     * maintain precision for financial calculations.
+     */
     @Column(nullable = false, precision = 19, scale = 8)
     private BigDecimal quantity;
 
+    /**
+     * The average price at which the shares were purchased.
+     * This value is recalculated whenever additional shares
+     * of the same stock are bought.
+     *
+     * Example:
+     * Buy 10 shares at $100 and 5 shares at $120.
+     * Average Buy Price = ((10 * 100) + (5 * 120)) / 15
+     */
+    @Column(nullable = false, precision = 19, scale = 2)
+    private BigDecimal averageBuyPrice;
 }

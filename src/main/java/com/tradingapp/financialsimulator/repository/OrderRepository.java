@@ -13,4 +13,5 @@ public interface OrderRepository {
 
     List<Order> findAllByStatus(OrderStatus status);
 
+    Order save(Order order);
 }
