@@ -54,7 +54,12 @@ public class TradingService {
         BigDecimal marketPrice = marketDataCache.getPrice(stock.getSymbol())
                 .orElseThrow(() -> new RuntimeException("Market price not available for " + stock.getSymbol())); // Replace with custom exception
 
-        Portfolio portfolio = user.getPortfolio();
+        Portfolio portfolio = portfolioRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new RuntimeException(
+                        "Portfolio not found for user ID: " + user.getId()
+                ));
+
+        portfolio.getUser();
         BigDecimal totalCost = marketPrice.multiply(BigDecimal.valueOf(orderRequest.getQuantity()));
 
         // 2. PROCESS ORDER based on type (BUY/SELL)
