@@ -1,5 +1,6 @@
 package com.tradingapp.financialsimulator.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -36,6 +37,7 @@ public class Portfolio {
     // 'nullable = false' ensures that a portfolio must always be associated with a user.
     // 'unique = true' reinforces the one-to-one nature of this relationship.
     @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false, unique = true)
+    @JsonIgnore
     private User user;
 
     // Using BigDecimal for monetary values is a best practice to avoid floating-point inaccuracies.
@@ -61,5 +63,6 @@ public class Portfolio {
     // deleted from the database. This is essential for managing the lifecycle of child entities.
 
     @OneToMany(mappedBy = "portfolio",cascade = CascadeType.ALL,orphanRemoval = true)
+    @JsonIgnore
     private List<PortfolioAsset> assets=new ArrayList<>();
 }

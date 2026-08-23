@@ -1,5 +1,6 @@
 package com.tradingapp.financialsimulator.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,6 +36,7 @@ public class User implements UserDetails {
     private String email;
 
     @Column(nullable = false) // The password field must not be null. We will store the BCRYPT HASHED password here, never the plain text.
+    @JsonIgnore
     private String password;
 
     @Enumerated(EnumType.STRING) // Tells JPA to persist the enum as a String (e.g., "USER" or "ADMIN") rather than its ordinal value (0 or 1), which is more readable.
@@ -55,6 +57,7 @@ public class User implements UserDetails {
     // data will not be loaded from the database until it is explicitly accessed
     // (e.g., via user.getPortfolio()). This prevents loading unnecessary data.
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private Portfolio portfolio;
 
     // --- UserDetails Interface Implementation ---
