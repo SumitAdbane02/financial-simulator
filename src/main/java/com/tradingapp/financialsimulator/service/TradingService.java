@@ -106,11 +106,12 @@ public class TradingService {
         // 6. CALCULATE TOTAL COST
         // =========================================================
 
-        BigDecimal quantity =
-                BigDecimal.valueOf(orderRequest.getQuantity());
+
+      
+
 
         BigDecimal totalCost =
-                marketPrice.multiply(quantity);
+                marketPrice.multiply(BigDecimal.valueOf(orderRequest.getQuantity()));
 
 
         // =========================================================
