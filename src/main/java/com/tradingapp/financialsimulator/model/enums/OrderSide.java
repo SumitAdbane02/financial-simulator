@@ -1,6 +1,6 @@
 package com.tradingapp.financialsimulator.model.enums;
 
-public enum OrderType {
+public enum OrderSide {
    BUY,
     SELL
 }

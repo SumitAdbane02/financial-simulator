@@ -1,6 +1,6 @@
 package com.tradingapp.financialsimulator.model;
 
-import com.tradingapp.financialsimulator.model.enums.OrderType;
+import com.tradingapp.financialsimulator.model.enums.OrderSide;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,6 +35,10 @@ public class Order {
 
 
     //The type of order
+     @Enumerated(EnumType.STRING)
+     @Column(nullable = false)
+     private OrderSide side;
+
      @Enumerated(EnumType.STRING)
      @Column(nullable = false)
      private OrderType type;

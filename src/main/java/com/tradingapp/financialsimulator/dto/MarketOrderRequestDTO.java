@@ -1,6 +1,6 @@
 package com.tradingapp.financialsimulator.dto;
 
-import com.tradingapp.financialsimulator.model.enums.OrderType;
+import com.tradingapp.financialsimulator.model.enums.OrderSide;
 import lombok.Data;
 
 /**
@@ -10,5 +10,5 @@ import lombok.Data;
 public class MarketOrderRequestDTO {
     private String symbol;
     private int quantity;
-    private OrderType orderType; // Will be either BUY or SELL
+    private OrderSide orderSide; // Will be either BUY or SELL
 }

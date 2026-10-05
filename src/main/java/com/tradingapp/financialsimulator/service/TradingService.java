@@ -2,7 +2,7 @@ package com.tradingapp.financialsimulator.service;
 
 import com.tradingapp.financialsimulator.dto.MarketOrderRequestDTO;
 import com.tradingapp.financialsimulator.model.*;
-import com.tradingapp.financialsimulator.model.enums.OrderType;
+import com.tradingapp.financialsimulator.model.enums.OrderSide;
 import com.tradingapp.financialsimulator.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -118,7 +118,7 @@ public class TradingService {
         // 7. PROCESS BUY / SELL
         // =========================================================
 
-        if (orderRequest.getOrderType() == OrderType.BUY) {
+        if (orderRequest.getOrderSide() == OrderSide.BUY) {
 
             processBuyOrder(
                     portfolio,
@@ -128,7 +128,7 @@ public class TradingService {
                     totalCost
             );
 
-        } else if (orderRequest.getOrderType() == OrderType.SELL) {
+        } else if (orderRequest.getOrderSide() == OrderSide.SELL) {
 
             processSellOrder(
                     portfolio,
@@ -213,9 +213,7 @@ public class TradingService {
 
 
         // Deduct money
-        portfolio.setCashBalance(
-                portfolio.getCashBalance()
-                        .subtract(totalCost)
+        portfolio.setCashBalance(portfolio.getCashBalance() .subtract(totalCost)
         );
 
         portfolioRepository.save(portfolio);
@@ -370,7 +368,7 @@ public class TradingService {
                 .stock(stock)
 
                 .type(
-                        orderRequest.getOrderType() == OrderType.BUY
+                        orderRequest.getOrderSide() == OrderSide.BUY
                                 ? TransactionType.BUY
                                 : TransactionType.SELL
                 )
@@ -411,8 +409,9 @@ public class TradingService {
                 .portfolio(portfolio)
 
                 .stock(stock)
+                .side(orderRequest.getOrderSide())
 
-                .type(orderRequest.getOrderType())
+                .type(OrderType.MARKET)
 
                 .status(OrderStatus.EXECUTED)
 
