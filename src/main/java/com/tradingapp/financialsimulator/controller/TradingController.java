@@ -1,5 +1,6 @@
 package com.tradingapp.financialsimulator.controller;
 
+import com.tradingapp.financialsimulator.dto.AdvancedOrderRequestDTO;
 import com.tradingapp.financialsimulator.dto.MarketOrderRequestDTO;
 import com.tradingapp.financialsimulator.model.Order;
 import com.tradingapp.financialsimulator.service.MarketDataCache;
@@ -42,6 +43,21 @@ public class TradingController {
             // In a production app, a @ControllerAdvice would handle this more globally.
             // For now, we catch the exceptions thrown by the service (e.g., "Insufficient funds")
             // and return a 400 Bad Request status with the error message.
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/advanced")
+    public ResponseEntity<?> placeAdvancedOrder(
+            @RequestBody AdvancedOrderRequestDTO orderRequestDTO,
+            Authentication authentication
+            ){
+        String username=authentication.getName();
+        try {
+            Order pendingOrder=tradingService.placedAdvancedOrder(orderRequestDTO,username);
+            return ResponseEntity.status(HttpStatus.CREATED).body(pendingOrder);
+
+        }catch (RuntimeException e){
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }

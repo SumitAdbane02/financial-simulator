@@ -1,5 +1,6 @@
 package com.tradingapp.financialsimulator.service;
 
+import com.tradingapp.financialsimulator.dto.AdvancedOrderRequestDTO;
 import com.tradingapp.financialsimulator.dto.MarketOrderRequestDTO;
 import com.tradingapp.financialsimulator.model.*;
 import com.tradingapp.financialsimulator.model.enums.OrderSide;
@@ -427,4 +428,41 @@ public class TradingService {
 
                 .build();
     }
+
+    // Method for the Advanced Details
+    @Transactional
+    public Order placedAdvancedOrder(AdvancedOrderRequestDTO orderRequestDTO,String username){
+       // 1. Validate the entity exist
+        User user=userRepository.findByUsername(username)
+                .orElseThrow(()->new RuntimeException("User not found "+username));
+
+        Stock stock=stockRepository.findBySymbol(orderRequestDTO.getSymbol())
+                .orElseThrow(()->new RuntimeException("Stock symbol not found "+orderRequestDTO.getOrderType()));
+
+        // 2.perform basic validation on itself
+        if (orderRequestDTO.getTriggerPrice().compareTo(BigDecimal.ZERO)<=0){
+            throw new RuntimeException("Trigger prices must be positive");
+        }
+        if (orderRequestDTO.getOrderType()==OrderType.MARKET){
+            throw new RuntimeException("This end point for Advanced order (LIMIT,STOP_LOSS) only");
+        }
+
+        Order pendingOrder=Order.builder()
+                .portfolio(user.getPortfolio()).stock(stock)
+                .side(orderRequestDTO.getSide())
+                .type(orderRequestDTO.getOrderType())
+                .status(OrderStatus.PENDING)
+                .quantity(orderRequestDTO.getQuantity())
+                .price(orderRequestDTO.getTriggerPrice())
+                .triggerPrice(orderRequestDTO.getTriggerPrice())
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        logger.info("Placing the PENDING {} {} order for {} shares of {} @ trigger price {}",
+                pendingOrder.getSide(),pendingOrder.getType(),pendingOrder.getQuantity(),
+                pendingOrder.getStock().getSymbol(),pendingOrder.getTriggerPrice());
+
+        return orderRepository.save(pendingOrder);
+    }
+
 }

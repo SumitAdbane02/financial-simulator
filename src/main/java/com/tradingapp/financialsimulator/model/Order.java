@@ -74,5 +74,8 @@ public class Order {
     @JoinColumn(name = "transaction_id")
     private Transaction transaction;
 
+    @Column
+    private BigDecimal triggerPrice;
+
 
 }
