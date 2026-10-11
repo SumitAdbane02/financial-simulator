@@ -465,4 +465,6 @@ public class TradingService {
         return orderRepository.save(pendingOrder);
     }
 
+    public void executeTriggeredOrder(Long id) {
+    }
 }
