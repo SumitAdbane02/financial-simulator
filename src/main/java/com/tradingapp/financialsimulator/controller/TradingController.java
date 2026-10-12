@@ -2,6 +2,7 @@ package com.tradingapp.financialsimulator.controller;
 
 import com.tradingapp.financialsimulator.dto.AdvancedOrderRequestDTO;
 import com.tradingapp.financialsimulator.dto.MarketOrderRequestDTO;
+import com.tradingapp.financialsimulator.dto.OrderSummaryDTO;
 import com.tradingapp.financialsimulator.model.Order;
 import com.tradingapp.financialsimulator.service.MarketDataCache;
 import com.tradingapp.financialsimulator.service.TradingService;
@@ -10,10 +11,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -62,4 +62,30 @@ public class TradingController {
         }
     }
 
+    @GetMapping("/pending")
+    public ResponseEntity<List<OrderSummaryDTO>> getPendingOrders(Authentication authentication){
+        String username=authentication.getName();
+        List<OrderSummaryDTO> pendingOrder=tradingService.getPendingOrderForUser(username);
+        return ResponseEntity.ok(pendingOrder);
+    }
+
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<?> cancelOrder(@PathVariable Long id,Authentication authentication){
+
+        String username=authentication.getName();
+        try {
+            Order cancelledOrder=tradingService.cancelOrder(id,username);
+            return ResponseEntity.ok(cancelledOrder);
+
+        }catch (RuntimeException e){
+            if (e.getMessage().contains("Not found")){
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            }
+            if (e.getMessage().contains("Permission")){
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+            }
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }
+ 

@@ -125,7 +125,7 @@ public class TradingService {
 
         if (orderRequest.getOrderSide() == OrderSide.BUY) {
 
-            processBuyOrder( 
+            processBuyOrder(
                     portfolio,
                     stock,
                     BigDecimal.valueOf(orderRequest.getQuantity()),
@@ -549,5 +549,30 @@ public class TradingService {
                         order.getCreateAt(),
                         order.getTriggerPrice()
                 )).collect(Collectors.toList());
+    }
+
+
+    @Transactional
+    public Order cancelOrder(Long orderId,String username){
+
+        User user=userRepository.findByUsername(username)
+                .orElseThrow(()->new RuntimeException("User not found : "+username));
+
+        Order order=orderRepository.findById(orderId).
+                orElseThrow(()->new RuntimeException("Order not found: "+orderId));
+      // The order belongs to user trying to cancel
+        if (!order.getPortfolio().getId().equals(user.getPortfolio().getId())){
+            throw new RuntimeException("User does not have permission to cancel this order ");
+
+        }
+        if (order.getStatus()!=OrderStatus.PENDING){
+            throw new RuntimeException("Cannot cancel an order that is not in PENDING state. Current status: "+order.getStatus());
+
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        logger.info("User {} cancelled order {}",username,orderId);
+
+        return orderRepository.save(order);
     }
 }
