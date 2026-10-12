@@ -2,6 +2,7 @@ package com.tradingapp.financialsimulator.repository;
 
 import com.tradingapp.financialsimulator.model.Order;
 import com.tradingapp.financialsimulator.model.OrderStatus;
+import com.tradingapp.financialsimulator.model.Portfolio;
 import com.tradingapp.financialsimulator.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -14,4 +15,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByStatus(OrderStatus status);
 
     List<Order> findAllByStatus(OrderStatus status);
+
+    List<Order> findByPortfolioAndStatus(Portfolio portfolio,OrderStatus status);
+
 }

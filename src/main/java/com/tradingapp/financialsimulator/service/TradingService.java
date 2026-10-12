@@ -1,7 +1,9 @@
 package com.tradingapp.financialsimulator.service;
 
+import com.influxdb.client.domain.Run;
 import com.tradingapp.financialsimulator.dto.AdvancedOrderRequestDTO;
 import com.tradingapp.financialsimulator.dto.MarketOrderRequestDTO;
+import com.tradingapp.financialsimulator.dto.OrderSummaryDTO;
 import com.tradingapp.financialsimulator.model.*;
 import com.tradingapp.financialsimulator.model.enums.OrderSide;
 import com.tradingapp.financialsimulator.repository.*;
@@ -14,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -121,10 +125,10 @@ public class TradingService {
 
         if (orderRequest.getOrderSide() == OrderSide.BUY) {
 
-            processBuyOrder(
+            processBuyOrder( 
                     portfolio,
                     stock,
-                    orderRequest.getQuantity(),
+                    BigDecimal.valueOf(orderRequest.getQuantity()),
                     marketPrice,
                     totalCost
             );
@@ -191,7 +195,7 @@ public class TradingService {
     private void processBuyOrder(
             Portfolio portfolio,
             Stock stock,
-            int quantity,
+            BigDecimal quantity,
             BigDecimal marketPrice,
             BigDecimal totalCost) {
 
@@ -221,7 +225,7 @@ public class TradingService {
 
 
         BigDecimal orderQuantity =
-                BigDecimal.valueOf(quantity);
+                (quantity);
 
 
         // Find existing asset or create new asset
@@ -465,6 +469,85 @@ public class TradingService {
         return orderRepository.save(pendingOrder);
     }
 
-    public void executeTriggeredOrder(Long id) {
+    @Transactional
+    public void executeTriggeredOrder(Long orderId) {
+//Fetch the order and lock it for the transation to prevent race condition
+        Order order=orderRepository.findById(orderId)
+                .orElseThrow(()->new RuntimeException("Order not found By Id "+orderId));
+
+                // This prevent the double -execution if the processor runs again before the lock
+        if (order.getStatus()!=OrderStatus.PENDING) {
+            logger.warn("Attempted to execute order id{} which is not PENDING, Current status ",order.getId(),order.getStatus());
+            return;
+        }
+
+        logger.info("Executing trigger order id :{}",orderId);
+        String symbol=order.getStock().getSymbol();
+        Portfolio portfolio=order.getPortfolio();
+
+        // Get the current market price of execution
+        BigDecimal executionPrice=marketDataCache.getPrice(symbol)
+                .orElseThrow(()->new RuntimeException("Market price is not available for "+symbol));
+
+        BigDecimal totalValue=executionPrice.multiply(order.getQuantity() );
+
+        // Final validation. check funds/share att the moment of execution
+        try{
+            if (order.getSide()==OrderSide.BUY){
+                //This re-uses the same validation ans logic as market orders
+                processBuyOrder(portfolio,order.getStock(),order.getQuantity(),executionPrice,totalValue);
+            }else {
+                processBuyOrder(portfolio,order.getStock(),order.getQuantity(),executionPrice,totalValue);
+            }
+
+            Transaction transaction=createTransactionForExceutedOrder(order,executionPrice);
+
+            transactionRepository.save(transaction);
+            order.setStatus(OrderStatus.EXECUTED);
+            order.setPrice(executionPrice);
+            order.setTransaction(transaction);
+            orderRepository.save(order);
+            logger.info("SUCCESS: Order{} executed at New portfolio cash ",order.getId(),executionPrice,portfolio.getCashBalance());
+
+
+        }catch (RuntimeException e){
+            logger.warn("FAILED to execute order {}, Setting ststus to FAILED ",order.getId(),e.getMessage());
+             order.setStatus(OrderStatus.FAILED);
+             orderRepository.save(order);
+        }
+
+    }
+
+    // help to create a tranction from an executed order
+    private  Transaction createTransactionForExceutedOrder(Order order,BigDecimal executionPrice){
+         return Transaction.builder()
+                 .portfolio(order.getPortfolio())
+                 .stock(order.getStock())
+                 .type(order.getSide()==OrderSide.BUY ? TransactionType.BUY:TransactionType.SELL)
+                 .quantity(order.getQuantity())
+                 .price(executionPrice)
+                 .timestamp(LocalDateTime.now())
+                 .build();
+
+    }
+
+    public List<OrderSummaryDTO> getPendingOrderForUser(String username){
+        User user=userRepository.findByUsername(username)
+                .orElseThrow(()->new RuntimeException(" User not found "+username));
+
+        List<Order> pendingOrders=orderRepository.findByPortfolioAndStatus(user.getPortfolio(),OrderStatus.PENDING);
+
+        // Map list of Order entities to a list of Ordersummmary
+        return pendingOrders.stream()
+                .map(order -> new OrderSummaryDTO(
+                        order.getId(),
+                        order.getStock().getSymbol()
+                                ,order.getType(),
+                        order.getSide(),
+                        order.getStatus(),
+                        order.getQuantity(),
+                        order.getCreateAt(),
+                        order.getTriggerPrice()
+                )).collect(Collectors.toList());
     }
 }
