@@ -1,5 +1,7 @@
 package com.tradingapp.financialsimulator.scheduler;
 
+import com.tradingapp.financialsimulator.dto.Quote;
+import com.tradingapp.financialsimulator.model.Order;
 import com.tradingapp.financialsimulator.model.Stock;
 import com.tradingapp.financialsimulator.repository.StockRepository;
 import com.tradingapp.financialsimulator.service.FinancialDataService;
@@ -8,10 +10,15 @@ import com.tradingapp.financialsimulator.service.MarketDataCache;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * A scheduled component responsible for periodically fetching and updating stock prices.
@@ -39,6 +46,9 @@ public class StockPriceUpdateScheduler {
      *  - initialDelay = 10000: The first execution will be delayed by 10,000 milliseconds (10 seconds)
      *      after the application has started. This gives the application time to fully initialize.
      */
+    private final SimpMessagingTemplate messagingTemplate;
+
+
     @Scheduled(fixedRate = 60000, initialDelay = 10000)
     public void updateStockPrices() {
         logger.info("Scheduler starting: Fetching live stock prices...");
@@ -87,5 +97,41 @@ public class StockPriceUpdateScheduler {
             }
         }
         logger.info("Scheduler finished: Current cache state: {}.",marketDataCache.getCacheState());
+    }
+
+    @Scheduled(fixedRate = 15000)  //Runs every 15 seconds
+    public  void fetchAndUpdateStockPrices(){
+        logger.debug("Running scheduled job to fetch and update stock prices. ");
+        try {
+            // Get all stock we are tracking from the database
+            List<String> symbols=stockRepository.findAll()
+                    .stream()
+                    .map(Stock::getSymbol).collect(Collectors.toList());
+
+            if (symbols.isEmpty()){
+              logger.debug("No stocks are being tracked. Skipping price update");
+              return;
+            }
+            // Fetch the latest prices from the external API
+
+
+            Map<String,BigDecimal> latestPrices=financialDataService.getLatestQuotes(symbols);
+
+           if (latestPrices==null || latestPrices.isEmpty()){
+               logger.warn("Received no prices from financial data service .");
+               return;
+           }
+
+           //Update the high-speed in memory cache
+            marketDataCache.updatePrices(latestPrices);
+
+           //influxDBService.writePricePoint(latestPrices);
+            logger.info("Broadcasting price update to websocket topic: /topic/prices");
+            messagingTemplate.convertAndSend("/topic/price",latestPrices);
+
+
+        }catch (Exception e){
+            logger.error("Error during scheduled stock price update ans broadcast",e);
+        }
     }
 }

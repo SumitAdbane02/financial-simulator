@@ -6,6 +6,7 @@ import com.tradingapp.financialsimulator.model.Stock;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -13,4 +14,6 @@ public interface PortfolioAssetRepository extends JpaRepository<PortfolioAsset,L
 
     Optional<PortfolioAsset> findByPortfolioAndStock(Portfolio portfolio, Stock stock);
 
+
+    List<PortfolioAsset> findByPortfolio(Portfolio portfolio);
 }

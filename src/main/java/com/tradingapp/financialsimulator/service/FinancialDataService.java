@@ -14,6 +14,10 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -91,5 +95,44 @@ public class FinancialDataService {
         }
         return Optional.empty();
     }
+
+
+    public Map<String, BigDecimal> getLatestQuotes(List<String> symbols) {
+
+        Map<String, BigDecimal> latestPrices = new HashMap<>();
+
+        for (String symbol : symbols) {
+            try {
+                Optional<Quote> quote = getQuote(symbol);
+
+                quote.ifPresent(q ->
+                        latestPrices.put(symbol, q.getCurrentPrice())
+                );
+
+            } catch (Exception e) {
+                logger.error(
+                        "Failed to fetch quote for symbol: {}",
+                        symbol,
+                        e
+                );
+            }
+        }
+
+        return latestPrices;
+    }
+   /* public Map<String, BigDecimal> getLatestPrices(List<String> symbols) {
+
+        Map<String, BigDecimal> latestPrices = new HashMap<>();
+
+        for (String symbol : symbols) {
+            Optional<Quote> quote = getQuote(symbol);
+
+            quote.ifPresent(q ->
+                    latestPrices.put(symbol, q.getCurrentPrice())
+            );
+        }
+
+        return latestPrices;
+    }*/
 }
 // highlight-end

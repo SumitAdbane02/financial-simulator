@@ -13,7 +13,9 @@ public class MarketDataCache {
 
     private final Map<String, BigDecimal> priceCache=new ConcurrentHashMap<>();
 
-
+    public void updatePrices(Map<String, BigDecimal> latestPrices) {
+        priceCache.putAll(latestPrices);
+    }
     public void updatePrice(String symbol,BigDecimal price){
         priceCache.put(symbol, price);
     }

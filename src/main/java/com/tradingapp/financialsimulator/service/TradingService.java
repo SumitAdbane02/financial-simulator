@@ -1,15 +1,14 @@
 package com.tradingapp.financialsimulator.service;
 
 import com.influxdb.client.domain.Run;
-import com.tradingapp.financialsimulator.dto.AdvancedOrderRequestDTO;
-import com.tradingapp.financialsimulator.dto.MarketOrderRequestDTO;
-import com.tradingapp.financialsimulator.dto.OrderSummaryDTO;
+import com.tradingapp.financialsimulator.dto.*;
 import com.tradingapp.financialsimulator.model.*;
 import com.tradingapp.financialsimulator.model.enums.OrderSide;
 import com.tradingapp.financialsimulator.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +32,9 @@ public class TradingService {
     private final OrderRepository orderRepository;
     private final TransactionRepository transactionRepository;
     private final MarketDataCache marketDataCache;
+
+    private final SimpMessagingTemplate messagingTemplate;
+
 
 
     @Transactional
@@ -183,6 +185,8 @@ public class TradingService {
         // =========================================================
         // 10. SAVE ORDER
         // =========================================================
+
+        sendPortfolioUpdate(username);
 
         return orderRepository.save(order);
     }
@@ -509,6 +513,9 @@ public class TradingService {
             orderRepository.save(order);
             logger.info("SUCCESS: Order{} executed at New portfolio cash ",order.getId(),executionPrice,portfolio.getCashBalance());
 
+            // we get the username from the portfolio associated with the order
+            sendPortfolioUpdate(order.getPortfolio().getUser().getUsername());
+
 
         }catch (RuntimeException e){
             logger.warn("FAILED to execute order {}, Setting ststus to FAILED ",order.getId(),e.getMessage());
@@ -574,5 +581,32 @@ public class TradingService {
         logger.info("User {} cancelled order {}",username,orderId);
 
         return orderRepository.save(order);
+    }
+
+    public void sendPortfolioUpdate(String username){
+        User user=userRepository.findByUsername(username)
+                .orElseThrow(()->new RuntimeException("User not found"+username));
+        Portfolio portfolio=user.getPortfolio();
+
+        // fetch all asset portfolio
+        List<PortfolioAsset> assets=portfolioAssetRepository.findByPortfolio(portfolio);
+
+        // Map the entities to DTO
+        List<PortfolioAssetDTO> assetDTOs=assets.stream()
+                .map(asset->new PortfolioAssetDTO(
+                        asset.getStock().getSymbol(),
+                        asset.getStock().getName(),
+                        asset.getQuantity(),
+                        asset.getAverageBuyPrice()
+                )).collect(Collectors.toList());
+
+        //Create the final payload
+        PortfolioUpdateDTO portfolioUpdate=new PortfolioUpdateDTO(portfolio.getCashBalance(),assetDTOs);
+
+        // use Message Template's convertAndSendToUser method
+        logger.info("Sending portfolio update to user {}",username);
+        messagingTemplate.convertAndSendToUser(
+                username,"/queue/portfolio",portfolioUpdate
+        );
     }
 }
