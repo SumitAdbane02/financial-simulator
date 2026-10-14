@@ -6,6 +6,7 @@ import com.tradingapp.financialsimulator.service.FinancialDataService; // Import
 import org.springframework.boot.CommandLineRunner; // Import CommandLineRunner
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean; // Import Bean
 import org.springframework.scheduling.annotation.EnableScheduling;
 
@@ -14,6 +15,7 @@ import java.util.List;
 
 @SpringBootApplication
 @EnableScheduling
+@EnableCaching
 public class FinancialSimulatorApplication {
 
 	public static void main(String[] args) {

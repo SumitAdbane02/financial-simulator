@@ -9,6 +9,7 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -32,6 +33,7 @@ public class PortfolioService {
     private final InfluxDBService influxDBService;
 
 
+    @Cacheable(cacheNames = "portfolioPerformance")
     public PortfolioPerformanceDTO getPortfolioPerformance(String username,int days){
         logger.info("Calculating portfolio performances for user ",username,days);
 
