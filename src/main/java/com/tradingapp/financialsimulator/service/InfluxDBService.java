@@ -8,6 +8,7 @@ import com.influxdb.client.write.Point;
 import com.influxdb.query.FluxRecord;
 import com.influxdb.query.FluxTable;
 import com.tradingapp.financialsimulator.dto.HistoricalPricePointDTO;
+import com.tradingapp.financialsimulator.dto.PerformanceDataPointDTO;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
@@ -18,8 +19,12 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Service responsible for all interactions with InfluxDB.
@@ -104,5 +109,82 @@ public class InfluxDBService {
 
         logger.info("Found {} historical data points for symbol '{}' in range '{}'", historicalData.size(), symbol, range);
         return historicalData;
+    }
+
+    public Map<String, List<PerformanceDataPointDTO>>
+    getHistoricalDailyDataForSymbols(
+            List<String> symbols,
+            LocalDate startDate,
+            LocalDate endDate) {
+
+        Map<String, List<PerformanceDataPointDTO>> priceHistoryMap =
+                new HashMap<>();
+
+        if (symbols == null || symbols.isEmpty()) {
+            return priceHistoryMap;
+        }
+
+        QueryApi queryApi = influxDBClient.getQueryApi();
+
+        for (String symbol : symbols) {
+            String fluxQuery = String.format(
+                    "from(bucket: \"%s\") " +
+                            "|> range(start: %s, stop: %s) " +
+                            "|> filter(fn: (r) => r._measurement == \"stock_price\") " +
+                            "|> filter(fn: (r) => r._field == \"price\") " +
+                            "|> filter(fn: (r) => r.symbol == \"%s\") " +
+                            "|> aggregateWindow(every: 1d, fn: last, createEmpty: false) " +
+                            "|> sort(columns: [\"_time\"])",
+                    influxBucket,
+                    startDate.atStartOfDay().toInstant(ZoneOffset.UTC),
+                    endDate.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC),
+                    symbol
+            );
+
+            List<PerformanceDataPointDTO> dailyPrices = new ArrayList<>();
+
+            try {
+                List<FluxTable> tables = queryApi.query(fluxQuery, influxOrg);
+
+                for (FluxTable table : tables) {
+                    for (FluxRecord record : table.getRecords()) {
+                        Instant timestamp = record.getTime();
+                        Object value = record.getValue();
+
+                        if (timestamp != null && value != null) {
+                            LocalDate date = timestamp
+                                    .atZone(ZoneOffset.UTC)
+                                    .toLocalDate();
+
+                            BigDecimal price = new BigDecimal(value.toString());
+
+                            dailyPrices.add(
+                                    new PerformanceDataPointDTO(date, price)
+                            );
+                        }
+                    }
+                }
+
+                priceHistoryMap.put(symbol, dailyPrices);
+
+                logger.info(
+                        "Retrieved {} daily prices for symbol {}",
+                        dailyPrices.size(),
+                        symbol
+                );
+
+            } catch (Exception e) {
+                logger.error(
+                        "Error retrieving daily prices for symbol {}: {}",
+                        symbol,
+                        e.getMessage(),
+                        e
+                );
+
+                priceHistoryMap.put(symbol, List.of());
+            }
+        }
+
+        return priceHistoryMap;
     }
 }
