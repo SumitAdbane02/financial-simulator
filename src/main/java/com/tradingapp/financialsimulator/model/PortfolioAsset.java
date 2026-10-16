@@ -57,7 +57,7 @@ public class PortfolioAsset {
      * The average price at which the shares were purchased.
      * This value is recalculated whenever additional shares
      * of the same stock are bought.
-     *
+     * <p>
      * Example:
      * Buy 10 shares at $100 and 5 shares at $120.
      * Average Buy Price = ((10 * 100) + (5 * 120)) / 15

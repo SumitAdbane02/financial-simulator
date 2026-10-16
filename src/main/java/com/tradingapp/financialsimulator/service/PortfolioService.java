@@ -186,16 +186,6 @@ public class PortfolioService {
                 .assets(assetViews)
                 .build();
     }
-       /* // Transfer the list of PortfolioAsset entities into a list DTO
-        List<PortfolioAssetDTO> assetDTOS=assets.stream()
-                .map(asset->new PortfolioAssetDTO(
-                        asset.getStock().getSymbol(),
-                        asset.getStock().getName(),
-                        asset.getQuantity(),
-                        asset.getAverageBuyPrice()
-                )).collect(Collectors.toList());
 
-        return new PortfolioUpdateDTO(portfolio.getCashBalance(),assetDTOS);
-    }*/
 
 }
